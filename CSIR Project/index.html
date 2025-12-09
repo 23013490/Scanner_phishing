@@ -1,0 +1,503 @@
+<?php
+require_once 'session.php';
+requireLogin();
+$user = getUserData();
+?>
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Signature Scanner</title>
+    <style>
+      :root {
+        --primary: #2563eb;
+        --primary-dark: #1d4ed8;
+        --primary-light: #3b82f6;
+        --danger: #dc2626;
+        --success: #16a34a;
+        --warning: #f59e0b;
+        --bg: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        --card: #ffffff;
+        --shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        --shadow-hover: 0 15px 35px rgba(0, 0, 0, 0.15);
+      }
+
+      * {
+        box-sizing: border-box;
+        font-family: "Segoe UI", system-ui, sans-serif;
+      }
+
+      body {
+        background: var(--bg);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        margin: 0;
+        padding: 20px;
+        position: relative;
+      }
+
+      body::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        z-index: -1;
+      }
+
+      .scanner-container {
+        background: var(--card);
+        padding: 2.5rem;
+        border-radius: 16px;
+        box-shadow: var(--shadow);
+        width: 100%;
+        max-width: 550px;
+        transition: all 0.3s ease;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+      }
+
+      .scanner-container:hover {
+        box-shadow: var(--shadow-hover);
+        transform: translateY(-2px);
+      }
+
+      h1 {
+        margin-top: 0;
+        color: #1e293b;
+        font-size: 1.8rem;
+        font-weight: 700;
+        text-align: center;
+        margin-bottom: 0.5rem;
+      }
+
+      .description {
+        color: #64748b;
+        font-size: 1rem;
+        margin-bottom: 2rem;
+        text-align: center;
+        line-height: 1.5;
+      }
+
+      textarea {
+        width: 100%;
+        height: 120px;
+        padding: 16px;
+        border: 2px solid #e2e8f0;
+        border-radius: 12px;
+        resize: vertical;
+        margin-bottom: 1.5rem;
+        font-family: monospace;
+        font-size: 0.9rem;
+        transition: border-color 0.3s ease;
+        background: #f8fafc;
+      }
+
+      textarea:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+      }
+
+      input {
+        width: 100%;
+        padding: 16px;
+        border: 2px solid #e2e8f0;
+        border-radius: 12px;
+        margin-bottom: 1.5rem;
+        font-family: inherit;
+        font-size: 1rem;
+        transition: border-color 0.3s ease;
+        background: #f8fafc;
+      }
+
+      input:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+      }
+
+      form {
+        margin-bottom: 1.5rem;
+      }
+
+      button {
+        background: linear-gradient(
+          135deg,
+          var(--primary) 0%,
+          var(--primary-light) 100%
+        );
+        color: white;
+        border: none;
+        padding: 16px 24px;
+        border-radius: 12px;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 1rem;
+        width: 100%;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
+      }
+
+      button:hover {
+        background: linear-gradient(
+          135deg,
+          var(--primary-dark) 0%,
+          var(--primary) 100%
+        );
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
+      }
+
+      button:active {
+        transform: translateY(0);
+      }
+
+      .result-box {
+        margin-top: 2rem;
+        padding: 1.5rem;
+        border-radius: 12px;
+        display: none;
+        animation: fadeIn 0.5s ease;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .result-box.danger {
+        background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+        border: 2px solid #fecaca;
+        color: var(--danger);
+      }
+
+      .result-box.safe {
+        background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+        border: 2px solid #bbf7d0;
+        color: var(--success);
+      }
+
+      .signature-match {
+        font-weight: bold;
+        display: block;
+        margin-top: 0.5rem;
+        font-size: 0.9rem;
+        background: rgba(0, 0, 0, 0.05);
+        padding: 8px 12px;
+        border-radius: 6px;
+        border-left: 4px solid currentColor;
+      }
+
+      .nav-buttons {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 2rem;
+        justify-content: center;
+      }
+
+      .nav-buttons button {
+        flex: 1;
+        background: linear-gradient(
+          135deg,
+          var(--primary) 0%,
+          var(--primary-light) 100%
+        );
+        color: white;
+        border: none;
+        padding: 12px 20px;
+        border-radius: 10px;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 0.9rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
+        max-width: 150px;
+      }
+
+      .nav-buttons button:hover {
+        background: linear-gradient(
+          135deg,
+          var(--primary-dark) 0%,
+          var(--primary) 100%
+        );
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
+      }
+
+      .nav-buttons button:active {
+        transform: translateY(0);
+      }
+
+      /* Dashboard specific styles */
+      #dashboard-content h3 {
+        color: #1e293b;
+        font-size: 1.4rem;
+        margin-bottom: 1.5rem;
+        text-align: center;
+      }
+
+      #dashboard-content ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+
+      #dashboard-content li {
+        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+        margin-bottom: 12px;
+        padding: 16px 20px;
+        border-radius: 10px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        transition: all 0.3s ease;
+        border: 1px solid rgba(255, 255, 255, 0.5);
+      }
+
+      #dashboard-content li:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      }
+
+      #dashboard-content li strong {
+        color: var(--primary);
+        font-weight: 600;
+      }
+
+      #dashboard-content li span {
+        background: var(--primary);
+        color: white;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+      }
+
+      /* Navigation header styles */
+      .nav-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 2px solid #e2e8f0;
+      }
+
+      .nav-header h2 {
+        margin: 0;
+        color: #1e293b;
+        font-size: 1.2rem;
+      }
+
+      .header-buttons {
+        display: flex;
+        gap: 10px;
+      }
+
+      .header-buttons button {
+        padding: 8px 16px;
+        font-size: 0.85rem;
+        width: auto;
+        max-width: 120px;
+      }
+
+      .logout-btn {
+        background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+      }
+
+      .logout-btn:hover {
+        background: linear-gradient(135deg, #b91c1c 0%, #991b1b 100%);
+      }
+
+      /* Footer styles */
+      footer {
+        text-align: center;
+        padding: 1.5rem;
+        color: #64748b;
+        font-size: 0.85rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        margin-top: 2rem;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="scanner-container" class="scanner-container">
+      <div class="nav-header">
+        <h2>PhishGuard Scanner</h2>
+        <div class="header-buttons">
+          <button onclick="window.location.href='profile.php'">Profile</button>
+          <button onclick="window.location.href='subscription.html'">
+            Subscribe
+          </button>
+          <button
+            onclick="window.location.href='logout.php'"
+            class="logout-btn"
+          >
+            Logout
+          </button>
+        </div>
+      </div>
+
+      <p class="description">
+        Welcome back,
+        <?php echo htmlspecialchars($user['username']); ?>! Enter a URL or email
+        text below. This tool checks against a local database of known phishing
+        signatures.
+      </p>
+
+      <div class="nav-buttons">
+        <button onclick="showScanner()">Scanner</button>
+        <button onclick="showDashboard()">Dashboard</button>
+      </div>
+
+      <textarea
+        id="inputData"
+        placeholder="Paste URL or text here (e.g., http://secure-login-update.com)..."
+      ></textarea>
+
+      <button onclick="scanInput()">Scan Now</button>
+
+      <div id="result" class="result-box">
+        <h3 id="resultTitle" style="margin: 0 0 0.5rem 0"></h3>
+        <span id="resultMessage"></span>
+      </div>
+    </div>
+
+    <div
+      id="dashboard-container"
+      class="scanner-container"
+      style="display: none"
+    >
+      <div class="nav-header">
+        <h2>PhishGuard Dashboard</h2>
+        <div class="header-buttons">
+          <button onclick="showScanner()">Scanner</button>
+          <button onclick="window.location.href='profile.php'">Profile</button>
+          <button
+            onclick="window.location.href='logout.php'"
+            class="logout-btn"
+          >
+            Logout
+          </button>
+        </div>
+      </div>
+
+      <p class="description">View the most common phishing attacks detected.</p>
+      <div id="dashboard-content"></div>
+    </div>
+
+    <footer>
+      <p>
+        &copy; 2025 PhishGuard Scanner. All rights reserved. |
+        <a href="#" style="color: #64748b; text-decoration: none"
+          >Privacy Policy</a
+        >
+        |
+        <a href="#" style="color: #64748b; text-decoration: none"
+          >Terms of Service</a
+        >
+      </p>
+    </footer>
+
+    <script>
+      function showScanner() {
+        document.getElementById("scanner-container").style.display = "block";
+        document.getElementById("dashboard-container").style.display = "none";
+      }
+
+      function showDashboard() {
+        document.getElementById("scanner-container").style.display = "none";
+        document.getElementById("dashboard-container").style.display = "block";
+        displayDashboard();
+      }
+
+      function displayDashboard() {
+        const content = document.getElementById("dashboard-content");
+        content.innerHTML = "<h3>Top Phishing Attacks</h3><ul>";
+        const sorted = Object.entries(attackFrequencies).sort(
+          (a, b) => b[1] - a[1]
+        );
+        sorted.forEach(([sig, freq]) => {
+          content.innerHTML += `<li><strong>${sig}</strong><span>${freq}</span></li>`;
+        });
+        content.innerHTML += "</ul>";
+      }
+
+      // 1. The "Database" of Signatures
+      const signatureDatabase = [
+        "secure-update-login",
+        "verify-account-now",
+        "free-iphone-winner",
+        "paypal-suspicious-activity",
+        "bank-of-america-alert",
+        "ngrok.io",
+        "000webhostapp",
+        "bit.ly/suspicious",
+      ];
+
+      const attackFrequencies = {
+        "secure-update-login": 45,
+        "verify-account-now": 32,
+        "free-iphone-winner": 28,
+        "paypal-suspicious-activity": 50,
+        "bank-of-america-alert": 38,
+        "ngrok.io": 60,
+        "000webhostapp": 42,
+        "bit.ly/suspicious": 35,
+      };
+
+      function scanInput() {
+        const input = document.getElementById("inputData").value.toLowerCase();
+        const resultBox = document.getElementById("result");
+        const title = document.getElementById("resultTitle");
+        const message = document.getElementById("resultMessage");
+
+        if (!input) {
+          alert("Please enter some text to scan.");
+          return;
+        }
+
+        // 2. The Scanning Logic (Signature Matching)
+        let detectedSignature = null;
+
+        for (let sig of signatureDatabase) {
+          if (input.includes(sig)) {
+            detectedSignature = sig;
+            break;
+          }
+        }
+
+        // 3. Display Results
+        resultBox.style.display = "block";
+        resultBox.className = "result-box";
+
+        if (detectedSignature) {
+          resultBox.classList.add("danger");
+          title.innerText = "⚠️ Phishing Threat Detected";
+          message.innerHTML = `This input matches a known phishing signature.<br>
+                                 <span class="signature-match">Match found: "${detectedSignature}"</span>`;
+        } else {
+          resultBox.classList.add("safe");
+          title.innerText = "✅ No Signatures Found";
+          message.innerText =
+            "The input does not match any known signatures in our local database.";
+        }
+      }
+    </script>
+  </body>
+</html>

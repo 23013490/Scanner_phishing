@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Subscription Plans - PhishGuard Scanner</title>
+    <!-- Firebase SDK -->
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+      import {
+        getAuth,
+        signOut,
+      } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+
+      // Firebase configuration (replace with your own config)
+      // Import the functions you need from the SDKs you need
+      import { initializeApp } from "firebase/app";
+      // TODO: Add SDKs for Firebase products that you want to use
+      // https://firebase.google.com/docs/web/setup#available-libraries
+
+      // Your web app's Firebase configuration
+      const firebaseConfig = {
+        apiKey: "AIzaSyAoMgJagqLxWhJmco2KHksA5A3pWSOKacg",
+        authDomain: "signature-scanner-9e03f.firebaseapp.com",
+        projectId: "signature-scanner-9e03f",
+        storageBucket: "signature-scanner-9e03f.firebasestorage.app",
+        messagingSenderId: "510792708222",
+        appId: "1:510792708222:web:da3e4295830f222ebca82f",
+      };
+
+      // Initialize Firebase
+      const app = initializeApp(firebaseConfig);
+
+      const auth = getAuth(app);
+
+      window.firebaseAuth = auth;
+    </script>
+    <style>
+      :root {
+        --primary: #2563eb;
+        --primary-dark: #1d4ed8;
+        --primary-light: #3b82f6;
+        --danger: #dc2626;
+        --success: #16a34a;
+        --warning: #f59e0b;
+        --bg: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        --card: #ffffff;
+        --shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        --shadow-hover: 0 15px 35px rgba(0, 0, 0, 0.15);
+      }
+
+      * {
+        box-sizing: border-box;
+        font-family: "Segoe UI", system-ui, sans-serif;
+      }
+
+      body {
+        background: var(--bg);
+        min-height: 100vh;
+        margin: 0;
+        padding: 20px;
+        position: relative;
+      }
+
+      body::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        z-index: -1;
+      }
+
+      .subscription-wrapper {
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+
+      .nav-header {
+        background: var(--card);
+        padding: 1.5rem 2.5rem;
+        border-radius: 16px;
+        box-shadow: var(--shadow);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+      }
+
+      .nav-header h1 {
+        margin: 0;
+        color: #1e293b;
+        font-size: 1.5rem;
+        font-weight: 700;
+      }
+
+      .header-buttons {
+        display: flex;
+        gap: 10px;
+      }
+
+      .header-buttons button {
+        padding: 10px 16px;
+        font-size: 0.85rem;
+        width: auto;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        background: linear-gradient(
+          135deg,
+          var(--primary) 0%,
+          var(--primary-light) 100%
+        );
+        color: white;
+        box-shadow: 0 2px 8px rgba(37, 99, 235, 0.2);
+      }
+
+      .header-buttons button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+      }
+
+      .logout-btn {
+        background: linear-gradient(
+          135deg,
+          #dc2626 0%,
+          #b91c1c 100%
+        ) !important;
+        box-shadow: 0 2px 8px rgba(220, 38, 38, 0.2) !important;
+      }
+
+      .logout-btn:hover {
+        box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3) !important;
+      }
+
+      .description {
+        text-align: center;
+        color: white;
+        font-size: 1.1rem;
+        margin-bottom: 3rem;
+        max-width: 600px;
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      .subscription-plans {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 2rem;
+        margin-bottom: 3rem;
+      }
+
+      .plan-card {
+        background: var(--card);
+        border: 2px solid #cbd5e1;
+        border-radius: 16px;
+        padding: 2rem;
+        text-align: center;
+        transition: all 0.3s ease;
+        position: relative;
+        box-shadow: var(--shadow);
+      }
+
+      .plan-card:hover {
+        transform: translateY(-8px);
+        box-shadow: var(--shadow-hover);
+        border-color: var(--primary);
+      }
+
+      .plan-card.featured {
+        border: 2px solid var(--primary);
+        background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+        transform: scale(1.05);
+        position: relative;
+        z-index: 1;
+      }
+
+      .plan-card.featured:hover {
+        transform: scale(1.05) translateY(-8px);
+      }
+
+      .badge {
+        position: absolute;
+        top: -15px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: linear-gradient(
+          135deg,
+          var(--primary) 0%,
+          var(--primary-light) 100%
+        );
+        color: white;
+        padding: 6px 16px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+      }
+
+      .plan-name {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin-bottom: 0.5rem;
+      }
+
+      .plan-price {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: var(--primary);
+        margin-bottom: 0.25rem;
+      }
+
+      .plan-period {
+        font-size: 0.95rem;
+        color: #64748b;
+        margin-bottom: 1.5rem;
+      }
+
+      .plan-features {
+        list-style: none;
+        padding: 0;
+        margin: 1.5rem 0;
+        text-align: left;
+      }
+
+      .plan-features li {
+        padding: 0.75rem 0;
+        color: #475569;
+        font-size: 0.95rem;
+        border-bottom: 1px solid #e2e8f0;
+        display: flex;
+        align-items: center;
+      }
+
+      .plan-features li:before {
+        content: "✓";
+        color: var(--success);
+        font-weight: 700;
+        margin-right: 0.75rem;
+        font-size: 1.1rem;
+      }
+
+      .plan-button {
+        background: linear-gradient(
+          135deg,
+          var(--primary) 0%,
+          var(--primary-light) 100%
+        );
+        color: white;
+        border: none;
+        padding: 14px 28px;
+        border-radius: 10px;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 1rem;
+        width: 100%;
+        margin-top: 1.5rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
+      }
+
+      .plan-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
+      }
+
+      .plan-card.featured .plan-button {
+        background: linear-gradient(
+          135deg,
+          var(--primary-dark) 0%,
+          var(--primary) 100%
+        );
+      }
+
+      .comparison-section {
+        background: var(--card);
+        padding: 2.5rem;
+        border-radius: 16px;
+        box-shadow: var(--shadow);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        margin-bottom: 2rem;
+      }
+
+      .comparison-section h2 {
+        color: #1e293b;
+        font-size: 1.4rem;
+        margin-bottom: 1.5rem;
+        text-align: center;
+      }
+
+      .comparison-table {
+        width: 100%;
+        border-collapse: collapse;
+        overflow-x: auto;
+      }
+
+      .comparison-table th,
+      .comparison-table td {
+        padding: 1rem;
+        text-align: left;
+        border-bottom: 1px solid #e2e8f0;
+      }
+
+      .comparison-table th {
+        background: #f8fafc;
+        color: #1e293b;
+        font-weight: 700;
+      }
+
+      .comparison-table td {
+        color: #475569;
+      }
+
+      .comparison-table tr:hover {
+        background: #f8fafc;
+      }
+
+      .check-mark {
+        color: var(--success);
+        font-weight: 700;
+        font-size: 1.2rem;
+      }
+
+      .cross-mark {
+        color: #94a3b8;
+        font-weight: 700;
+        font-size: 1.2rem;
+      }
+
+      footer {
+        text-align: center;
+        padding: 1.5rem;
+        color: white;
+        font-size: 0.85rem;
+        margin-top: 3rem;
+      }
+
+      footer a {
+        color: white;
+        text-decoration: none;
+        transition: opacity 0.3s ease;
+      }
+
+      footer a:hover {
+        opacity: 0.8;
+      }
+
+      @media (max-width: 768px) {
+        .plan-card.featured {
+          transform: scale(1);
+        }
+
+        .plan-card.featured:hover {
+          transform: translateY(-8px);
+        }
+
+        .subscription-plans {
+          gap: 1rem;
+        }
+
+        .comparison-table {
+          font-size: 0.9rem;
+        }
+
+        .comparison-table th,
+        .comparison-table td {
+          padding: 0.75rem;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="subscription-wrapper">
+      <div class="nav-header">
+        <h1>Subscription Plans</h1>
+        <div class="header-buttons">
+          <button onclick="goToScanner()">Scanner</button>
+          <button onclick="goToProfile()">Profile</button>
+          <button onclick="logoutUser()" class="logout-btn">Logout</button>
+        </div>
+      </div>
+
+      <div class="description">
+        Choose the perfect plan for your phishing detection needs. Scale as your
+        security requirements grow.
+      </div>
+
+      <div class="subscription-plans">
+        <!-- Free Plan -->
+        <div class="plan-card">
+          <div class="plan-name">Free</div>
+          <div class="plan-price">$0</div>
+          <div class="plan-period">Forever free</div>
+          <ul class="plan-features">
+            <li>Basic phishing detection</li>
+            <li>Up to 10 scans/day</li>
+            <li>Email support</li>
+            <li>Local signature database</li>
+            <li>Community access</li>
+          </ul>
+          <button class="plan-button" onclick="selectPlan('Free')">
+            Current Plan
+          </button>
+        </div>
+
+        <!-- Pro Plan -->
+        <div class="plan-card featured">
+          <div class="badge">Most Popular</div>
+          <div class="plan-name">Pro</div>
+          <div class="plan-price">$9.99</div>
+          <div class="plan-period">Per month</div>
+          <ul class="plan-features">
+            <li>Advanced threat detection</li>
+            <li>Unlimited scans</li>
+            <li>Priority email support</li>
+            <li>Real-time threat intel</li>
+            <li>API access</li>
+            <li>Custom rules & filters</li>
+          </ul>
+          <button class="plan-button" onclick="selectPlan('Pro')">
+            Upgrade Now
+          </button>
+        </div>
+
+        <!-- Enterprise Plan -->
+        <div class="plan-card">
+          <div class="plan-name">Enterprise</div>
+          <div class="plan-price">Custom</div>
+          <div class="plan-period">Contact us</div>
+          <ul class="plan-features">
+            <li>All Pro features</li>
+            <li>Dedicated support</li>
+            <li>On-premises deployment</li>
+            <li>Custom integrations</li>
+            <li>SLA guarantee</li>
+            <li>Advanced analytics</li>
+          </ul>
+          <button class="plan-button" onclick="selectPlan('Enterprise')">
+            Contact Sales
+          </button>
+        </div>
+      </div>
+
+      <!-- Comparison Table -->
+      <div class="comparison-section">
+        <h2>Plan Comparison</h2>
+        <table class="comparison-table">
+          <thead>
+            <tr>
+              <th>Feature</th>
+              <th>Free</th>
+              <th>Pro</th>
+              <th>Enterprise</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Phishing Detection</td>
+              <td><span class="check-mark">✓</span></td>
+              <td><span class="check-mark">✓</span></td>
+              <td><span class="check-mark">✓</span></td>
+            </tr>
+            <tr>
+              <td>Daily Scan Limit</td>
+              <td>10 scans</td>
+              <td>Unlimited</td>
+              <td>Unlimited</td>
+            </tr>
+            <tr>
+              <td>Real-time Threat Intel</td>
+              <td><span class="cross-mark">✕</span></td>
+              <td><span class="check-mark">✓</span></td>
+              <td><span class="check-mark">✓</span></td>
+            </tr>
+            <tr>
+              <td>API Access</td>
+              <td><span class="cross-mark">✕</span></td>
+              <td><span class="check-mark">✓</span></td>
+              <td><span class="check-mark">✓</span></td>
+            </tr>
+            <tr>
+              <td>Custom Rules</td>
+              <td><span class="cross-mark">✕</span></td>
+              <td><span class="check-mark">✓</span></td>
+              <td><span class="check-mark">✓</span></td>
+            </tr>
+            <tr>
+              <td>Priority Support</td>
+              <td><span class="cross-mark">✕</span></td>
+              <td><span class="check-mark">✓</span></td>
+              <td><span class="check-mark">✓</span></td>
+            </tr>
+            <tr>
+              <td>Dedicated Support</td>
+              <td><span class="cross-mark">✕</span></td>
+              <td><span class="cross-mark">✕</span></td>
+              <td><span class="check-mark">✓</span></td>
+            </tr>
+            <tr>
+              <td>On-premises Deployment</td>
+              <td><span class="cross-mark">✕</span></td>
+              <td><span class="cross-mark">✕</span></td>
+              <td><span class="check-mark">✓</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <footer>
+      <p>
+        &copy; 2025 PhishGuard Scanner. All rights reserved. |
+        <a href="#">Privacy Policy</a> | <a href="#">Terms of Service</a>
+      </p>
+    </footer>
+
+    <script>
+      function goToScanner() {
+        window.location.href = "index.html";
+      }
+
+      function goToProfile() {
+        window.location.href = "profile.html";
+      }
+
+      async function logoutUser() {
+        try {
+          await signOut(window.firebaseAuth);
+          window.location.href = "index.html";
+        } catch (error) {
+          alert("Error logging out: " + error.message);
+        }
+      }
+
+      function selectPlan(planName) {
+        if (planName === "Free") {
+          alert("You are already on the Free plan!");
+        } else if (planName === "Enterprise") {
+          alert(
+            "Our sales team will contact you shortly. Thank you for your interest in PhishGuard Enterprise!"
+          );
+        } else {
+          alert(
+            `Thank you for choosing the ${planName} plan! Proceeding to payment...`
+          );
+          // Payment processing would be implemented here
+        }
+      }
+    </script>
+  </body>
+</html>
